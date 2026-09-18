@@ -6,6 +6,7 @@ import (
 	"example/storage"
 	"fmt"
 	"net"
+	"os"
 	"os/signal"
 	"syscall"
 
@@ -37,9 +38,22 @@ func (s *server) Transfer(ctx context.Context, req *pb.TransferRequest) (*pb.Tra
 	return &pb.TransferResponse{Succes: true, Message: "operation succes"}, nil
 }
 
+func connect() string {
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbUser := os.Getenv("DB_USER")
+	dbPass := os.Getenv("DB_PASSWORD")
+	dbName := os.Getenv("DB_NAME")
+
+	conn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", dbUser, dbPass, dbHost, dbPort, dbName)
+
+	return conn
+}
+
 func main() {
-	pool, err := pgxpool.New(context.Background(),
-		"postgres://postgres:sos11982@localhost:5432/grpc_test?sslmode=disable")
+	conn := connect()
+
+	pool, err := pgxpool.New(context.Background(), conn)
 	if err != nil {
 		panic(err)
 	}
@@ -49,6 +63,29 @@ func main() {
 		panic(err)
 	}
 	fmt.Println("database connected")
+
+	_, err = pool.Exec(context.Background(), `
+		 CREATE TABLE IF NOT EXISTS users (
+			id SERIAL PRIMARY KEY,
+			name TEXT NOT NULL UNIQUE,
+			age INT NOT NULL, 
+			balance INT NOT NULL DEFAULT 1000
+		)
+	`)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = pool.Exec(context.Background(), `
+		INSERT INTO users (name, age) VALUES
+			('Bob', 20 ),
+			('Alice', 30 ),
+			('Gunter', 23 )
+			ON CONFLICT (name) DO NOTHING
+	`)
+	if err != nil {
+		panic(err)
+	}
 
 	st := storage.NewStorage(pool)
 

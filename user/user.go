@@ -26,5 +26,5 @@ func main() {
 		panic("err")
 	}
 
-	fmt.Printf("User: %s, Age: %d", resp.Name, resp.Age)
+	fmt.Printf("User: %s", resp.Name)
 }

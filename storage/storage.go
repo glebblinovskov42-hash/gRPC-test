@@ -22,8 +22,8 @@ func (s *Storage) GetUser(ctx context.Context, id int32) (*pb.UserResponse, erro
 	var balance int32
 
 	err := s.pool.QueryRow(ctx,
-		"SELECT age, name, balance FROM users WHERE id = $1", id,
-	).Scan(&age, &name, &balance)
+		"SELECT name, age, balance FROM users WHERE id = $1", id,
+	).Scan(&name, &age, &balance)
 	if err != nil {
 		return nil, err
 	}
